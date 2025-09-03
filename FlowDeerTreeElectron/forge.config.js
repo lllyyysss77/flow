@@ -4,7 +4,7 @@ module.exports = {
     name: "FlowDeer Tree",
     icon: "../FlowDeerTree/src-tauri/icons/icon.icns",
     platform: ['darwin', 'win32'],
-    arch: ['x64', 'arm64']
+    arch: ['x89', 'arm64']
   },
   rebuildConfig: {},
   makers: [
