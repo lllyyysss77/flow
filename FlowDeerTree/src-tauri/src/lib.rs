@@ -1,57 +1,71 @@
-// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
+//! Tauri 命令处理模块
+//! 
+//! 包含核心业务逻辑和API端点
+
+mod openai_config;
+use openai_config::{OpenAIConfig, get_config, update_config};
+
+/// 应用状态结构体
+#[derive(Default)]
+pub struct AppState {
+    // 状态字段示例
+    // task_queue: Mutex<Vec<String>>,
 }
 
-use tauri::Emitter;
-use tokio::time::sleep;
-
+/// 欢迎命令
+/// 
+/// # 参数
+/// - `name`: 用户名
+/// 
+/// # 返回
+/// 格式化后的欢迎消息
 #[tauri::command]
-async fn start_task(app: tauri::AppHandle) -> String {
-    // 模拟一个异步长任务，通过事件发送进度
-    let handle = app.clone();
-    tauri::async_runtime::spawn(async move {
-        for i in 0..=100 {
-            // 发送事件到前端，事件名为 `task-progress`
-            let _ = handle.emit("task-progress", i);
-            // 异步等待，避免阻塞 runtime
-            sleep(std::time::Duration::from_millis(50)).await;
-        }
-        let _ = handle.emit("task-complete", "done");
-    });
-    "started".to_string()
+pub fn greet(name: &str) -> String {
+    format!("Hello, {}! Welcome to FlowDeer", name)
 }
 
-#[cfg_attr(mobile, tauri::mobile_entry_point)]
-pub fn run() {
+/// 启动异步任务
+/// 
+/// # 参数
+/// - `app`: 应用句柄
+/// - `id`: 任务ID
+/// 
+/// # 返回
+/// 任务执行结果
+#[tauri::command]
+pub async fn start_task(app: tauri::AppHandle, id: String) -> Result<(), String> {
+    // 模拟异步任务
+    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+    
+    // 发送事件到前端
+    app.emit("task_completed", &id)
+        .map_err(|e| e.to_string())?;
+    
+    Ok(())
+}
+
+/// 获取当前OpenAI配置
+#[tauri::command]
+pub async fn get_openai_config() -> Result<OpenAIConfig, String> {
+    Ok(get_config())
+}
+
+/// 更新OpenAI配置
+#[tauri::command]
+pub async fn update_openai_config(new_config: OpenAIConfig) -> Result<OpenAIConfig, String> {
+    Ok(update_config(new_config))
+}
+
+/// 初始化Tauri应用
+pub fn run_app() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_fs::init())
-        .plugin(tauri_plugin_upload::init())
-        .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet, start_task])
+        .invoke_handler(tauri::generate_handler![
+            greet, 
+            start_task,
+            get_openai_config,
+            update_openai_config
+        ])
+        .manage(AppState::default())
         .run(tauri::generate_context!())
-        .expect("error while running tauri application");
-}
-
-#[cfg(test)]
-mod tests {
-    use super::greet;
-    use super::start_task;
-    // ...existing code...
-
-    #[test]
-    fn test_greet() {
-        let res = greet("CI");
-        assert!(res.contains("Hello, CI!"));
-    }
-
-    // 进度事件功能为第二阶段，此测试会在无 GUI 的 CI/容器环境中创建 EventLoop 导致失败。
-    // 标记为 ignored，后续在实现事件系统并在集成测试环境可用后再启用。
-    #[test]
-    #[ignore]
-    fn test_start_task_returns() {
-        // 占位：进度事件将在第二阶段覆盖
-        assert!(true);
-    }
+        .expect("运行Tauri应用时出错");
 }

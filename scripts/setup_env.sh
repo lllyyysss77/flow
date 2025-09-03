@@ -27,3 +27,9 @@ else
 fi
 
 echo "环境准备完成。"
+
+# 设置OpenAI API密钥提示
+echo "请设置OPENAI_API_KEY环境变量："
+echo "1. 临时设置: export OPENAI_API_KEY=your_api_key"
+echo "2. 永久设置: 将 'export OPENAI_API_KEY=your_api_key' 添加到 ~/.bashrc 或 ~/.zshrc"
+echo "3. 使用.env文件: 在项目根目录创建.env文件并添加 OPENAI_API_KEY=your_api_key"
